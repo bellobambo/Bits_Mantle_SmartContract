@@ -83,6 +83,25 @@ contract Bits {
         uint256 paidAt;
     }
 
+    enum AIReviewType {
+        PropertyVerification,
+        InvestmentReview
+    }
+
+    struct AIReview {
+        uint256 id;
+        uint256 houseId;
+        AIReviewType reviewType;
+        address reviewer;
+        Role reviewerRole;
+        string status;
+        uint256 confidenceBps;
+        string summary;
+        bytes32 evidenceHash;
+        string evidenceURI;
+        uint256 createdAt;
+    }
+
     uint256 public constant PLATFORM_RENT_SHARE_BPS = 1_000;
     uint256 public constant LANDLORD_RENT_SHARE_BPS = 1_000;
     uint256 public constant INVESTOR_RENT_SHARE_BPS = 8_000;
@@ -94,6 +113,7 @@ contract Bits {
 
     uint256 public nextHouseId = 1;
     uint256 public nextReceiptId = 1;
+    uint256 public nextAIReviewId = 1;
     address payable public immutable platformOwner;
 
     mapping(address => User) public users;
@@ -107,6 +127,7 @@ contract Bits {
     mapping(uint256 => mapping(address => uint256)) public investedByHouse;
     mapping(uint256 => mapping(address => uint256)) public investedAtByHouse;
     mapping(uint256 => mapping(address => bool)) private isHouseInvestor;
+    mapping(uint256 => AIReview[]) private aiReviewsByHouse;
 
     event UserRegistered(address indexed user, string name, Role role, string matricNumber, string schoolName);
     event HouseUploaded(uint256 indexed houseId, address indexed landlord, uint256 propertyValue);
@@ -130,6 +151,17 @@ contract Bits {
         address indexed recipient,
         Role recipientRole,
         uint256 amount
+    );
+    event AIReviewStored(
+        uint256 indexed reviewId,
+        uint256 indexed houseId,
+        AIReviewType indexed reviewType,
+        address reviewer,
+        Role reviewerRole,
+        string status,
+        uint256 confidenceBps,
+        bytes32 evidenceHash,
+        string evidenceURI
     );
 
     constructor() {
@@ -305,6 +337,65 @@ contract Bits {
         });
     }
 
+    function storePropertyVerificationReview(
+        uint256 houseId,
+        string calldata status,
+        uint256 confidenceBps,
+        string calldata summary,
+        bytes32 evidenceHash,
+        string calldata evidenceURI
+    ) external onlyRegisteredRole(Role.Landlord) returns (uint256 reviewId) {
+        House storage house = houses[houseId];
+        require(house.id != 0, "Bits: invalid house");
+        require(house.active, "Bits: house not active");
+        require(house.landlord == msg.sender, "Bits: not house landlord");
+
+        reviewId = _storeAIReview(
+            houseId,
+            AIReviewType.PropertyVerification,
+            status,
+            confidenceBps,
+            summary,
+            evidenceHash,
+            evidenceURI
+        );
+    }
+
+    function storeInvestmentReview(
+        uint256 houseId,
+        string calldata status,
+        uint256 confidenceBps,
+        string calldata summary,
+        bytes32 evidenceHash,
+        string calldata evidenceURI
+    ) external onlyRegisteredRole(Role.Investor) returns (uint256 reviewId) {
+        House storage house = houses[houseId];
+        require(house.id != 0, "Bits: invalid house");
+        require(house.active, "Bits: house not active");
+
+        reviewId = _storeAIReview(
+            houseId,
+            AIReviewType.InvestmentReview,
+            status,
+            confidenceBps,
+            summary,
+            evidenceHash,
+            evidenceURI
+        );
+    }
+
+    function getAIReviews(uint256 houseId) external view returns (AIReview[] memory) {
+        return aiReviewsByHouse[houseId];
+    }
+
+    function getAIReview(uint256 houseId, uint256 index) external view returns (AIReview memory) {
+        return aiReviewsByHouse[houseId][index];
+    }
+
+    function getAIReviewCount(uint256 houseId) external view returns (uint256) {
+        return aiReviewsByHouse[houseId].length;
+    }
+
     function getReceipt(uint256 receiptId) external view returns (RentalReceipt memory) {
         return receipts[receiptId];
     }
@@ -421,6 +512,50 @@ contract Bits {
         );
 
         emit PayoutRecorded(receiptId, houseId, recipient, recipientRole, amount);
+    }
+
+    function _storeAIReview(
+        uint256 houseId,
+        AIReviewType reviewType,
+        string calldata status,
+        uint256 confidenceBps,
+        string calldata summary,
+        bytes32 evidenceHash,
+        string calldata evidenceURI
+    ) private returns (uint256 reviewId) {
+        require(houses[houseId].id != 0, "Bits: invalid house");
+        require(bytes(status).length != 0, "Bits: review status required");
+        require(bytes(summary).length != 0, "Bits: review summary required");
+        require(confidenceBps <= BPS_DENOMINATOR, "Bits: invalid confidence");
+
+        reviewId = nextAIReviewId++;
+        AIReview memory review = AIReview({
+            id: reviewId,
+            houseId: houseId,
+            reviewType: reviewType,
+            reviewer: msg.sender,
+            reviewerRole: users[msg.sender].role,
+            status: status,
+            confidenceBps: confidenceBps,
+            summary: summary,
+            evidenceHash: evidenceHash,
+            evidenceURI: evidenceURI,
+            createdAt: block.timestamp
+        });
+
+        aiReviewsByHouse[houseId].push(review);
+
+        emit AIReviewStored(
+            reviewId,
+            houseId,
+            reviewType,
+            msg.sender,
+            users[msg.sender].role,
+            status,
+            confidenceBps,
+            evidenceHash,
+            evidenceURI
+        );
     }
 
     function _sendValue(address payable recipient, uint256 amount) private {

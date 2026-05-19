@@ -66,17 +66,11 @@ $ cast --help
 ```
 
 
-
-bambo@MrBello:~/Bits_Contract$ cast wallet import deployer --interactive
-Enter private key:
-Enter password: 
-`deployer` keystore was saved successfully. Address: 0x323d8ee95b5e81bf21d05237ac1501c41328ba50
-bambo@MrBello:~/Bits_Contract$ 
-
-
 bambo@MrBello:~/Bits_Contract$ forge script script/Bits.s.sol --account deployer --broadcast --rpc-url https://rpc.sepolia.mantle.xyz
-[⠢] Compiling...
-No files changed, compilation skipped
+[⠒] Compiling...
+[⠊] Compiling 16 files with Solc 0.8.33
+[⠢] Solc 0.8.33 finished in 8.86s
+Compiler run successful!
 Enter keystore password:
 Script ran successfully.
 
@@ -88,20 +82,20 @@ Chain 5003
 
 Estimated gas price: 100.000000001 gwei
 
-Estimated total gas used for script: 3994432
+Estimated total gas used for script: 5123290
 
-Estimated amount required: 0.399443200003994432 MNT
+Estimated amount required: 0.51232900000512329 MNT
 
 ==========================
 
 ##### mantle-sepolia
-✅  [Success] Hash: 0x35cea4df1f71d2eb34b0779fc4fcc927fc1346fe3a8330388d100dbd0cbdec9b
-Contract Address: 0xbf16c7cA893c075758bc18f66d5A993372A6914d
-Block: 38788527
-Paid: 0.152364400003047288 MNT (3047288 gas * 50.000000001 gwei)
+✅  [Success] Hash: 0xb671aee1b14342087e1362a4f8fbe6c20a43f1202af575f923bcf020ad8115ad
+Contract Address: 0xcDFb1272Fad230337C553e8c5649d5C5cf361f03
+Block: 38826822
+Paid: 0.1954405408803 MNT (3908803 gas * 50.0001 gwei)
 
-✅ Sequence #1 on mantle-sepolia | Total Paid: 0.152364400003047288 MNT (3047288 gas * avg 50.000000001 gwei)
-                                                                                                                                                                        
+✅ Sequence #1 on mantle-sepolia | Total Paid: 0.1954405408803 MNT (3908803 gas * avg 50.0001 gwei)
+                                                                                                                                                                           
 
 ==========================
 
@@ -111,4 +105,15 @@ Transactions saved to: /home/bambo/Bits_Contract/broadcast/Bits.s.sol/5003/run-l
 
 Sensitive values saved to: /home/bambo/Bits_Contract/cache/Bits.s.sol/5003/run-latest.json
 
+bambo@MrBello:~/Bits_Contract$ 
+
+
+bambo@MrBello:~/Bits_Contract$ forge verify-contract 0xcDFb1272Fad230337C553e8c5649d5C5cf361f03 src/Bits.sol:Bits --chain 5003
+Start verifying contract `0xcDFb1272Fad230337C553e8c5649d5C5cf361f03` deployed on mantle-sepolia
+Attempting to verify on Sourcify. Pass the --etherscan-api-key <API_KEY> to verify on Etherscan, or use the --verifier flag to verify on another provider.
+
+Submitting verification for [Bits] "0xcDFb1272Fad230337C553e8c5649d5C5cf361f03".
+Submitted contract for verification:
+        Verification Job ID: `35da8110-fc49-4b2a-8a19-bd2cce2b49d4`
+        URL: https://sourcify.dev/server/v2/verify/35da8110-fc49-4b2a-8a19-bd2cce2b49d4
 bambo@MrBello:~/Bits_Contract$ 

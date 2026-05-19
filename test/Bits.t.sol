@@ -120,6 +120,148 @@ contract BitsTest is Test {
         assertEq(landlord.balance, landlordBalanceBefore + 20 ether);
     }
 
+    function test_LandlordStoresPropertyVerificationAIReview() public {
+        uint256 houseId = _uploadHouse();
+        bytes32 evidenceHash = keccak256("property-ai-review");
+
+        vm.warp(1_700_000_000);
+        vm.prank(landlord);
+        uint256 reviewId = bits.storePropertyVerificationReview(
+            houseId,
+            "verified",
+            9_200,
+            "Ownership proof, landlord name, and property location matched.",
+            evidenceHash,
+            "ipfs://ai-property-review"
+        );
+
+        assertEq(reviewId, 1);
+        assertEq(bits.getAIReviewCount(houseId), 1);
+
+        Bits.AIReview memory review = bits.getAIReview(houseId, 0);
+        assertEq(review.id, reviewId);
+        assertEq(review.houseId, houseId);
+        assertEq(uint256(review.reviewType), uint256(Bits.AIReviewType.PropertyVerification));
+        assertEq(review.reviewer, landlord);
+        assertEq(uint256(review.reviewerRole), uint256(Bits.Role.Landlord));
+        assertEq(review.status, "verified");
+        assertEq(review.confidenceBps, 9_200);
+        assertEq(review.summary, "Ownership proof, landlord name, and property location matched.");
+        assertEq(review.evidenceHash, evidenceHash);
+        assertEq(review.evidenceURI, "ipfs://ai-property-review");
+        assertEq(review.createdAt, 1_700_000_000);
+
+        Bits.AIReview[] memory reviews = bits.getAIReviews(houseId);
+        assertEq(reviews.length, 1);
+        assertEq(reviews[0].id, reviewId);
+    }
+
+    function test_OnlyHouseLandlordCanStorePropertyVerificationAIReview() public {
+        uint256 houseId = _uploadHouse();
+
+        vm.prank(investorOne);
+        vm.expectRevert("Bits: wrong role");
+        bits.storePropertyVerificationReview(
+            houseId,
+            "verified",
+            9_200,
+            "Ownership proof matched.",
+            keccak256("property-ai-review"),
+            "ipfs://ai-property-review"
+        );
+
+        vm.prank(student);
+        vm.expectRevert("Bits: wrong role");
+        bits.storePropertyVerificationReview(
+            houseId,
+            "verified",
+            9_200,
+            "Ownership proof matched.",
+            keccak256("property-ai-review"),
+            "ipfs://ai-property-review"
+        );
+    }
+
+    function test_InvestorStoresInvestmentAIReview() public {
+        uint256 houseId = _uploadHouse();
+        bytes32 evidenceHash = keccak256("investment-ai-review");
+
+        vm.warp(1_700_000_000);
+        vm.prank(investorOne);
+        uint256 reviewId = bits.storeInvestmentReview(
+            houseId,
+            "moderate",
+            7_800,
+            "Rent and occupancy look viable, but funding concentration should be monitored.",
+            evidenceHash,
+            "ipfs://ai-investment-review"
+        );
+
+        assertEq(reviewId, 1);
+        assertEq(bits.getAIReviewCount(houseId), 1);
+
+        Bits.AIReview memory review = bits.getAIReview(houseId, 0);
+        assertEq(review.id, reviewId);
+        assertEq(review.houseId, houseId);
+        assertEq(uint256(review.reviewType), uint256(Bits.AIReviewType.InvestmentReview));
+        assertEq(review.reviewer, investorOne);
+        assertEq(uint256(review.reviewerRole), uint256(Bits.Role.Investor));
+        assertEq(review.status, "moderate");
+        assertEq(review.confidenceBps, 7_800);
+        assertEq(review.summary, "Rent and occupancy look viable, but funding concentration should be monitored.");
+        assertEq(review.evidenceHash, evidenceHash);
+        assertEq(review.evidenceURI, "ipfs://ai-investment-review");
+        assertEq(review.createdAt, 1_700_000_000);
+    }
+
+    function test_AIReviewRequiresValidHouseStatusSummaryAndConfidence() public {
+        uint256 houseId = _uploadHouse();
+
+        vm.startPrank(investorOne);
+
+        vm.expectRevert("Bits: invalid house");
+        bits.storeInvestmentReview(
+            999,
+            "moderate",
+            7_800,
+            "Review summary.",
+            keccak256("investment-ai-review"),
+            "ipfs://ai-investment-review"
+        );
+
+        vm.expectRevert("Bits: review status required");
+        bits.storeInvestmentReview(
+            houseId,
+            "",
+            7_800,
+            "Review summary.",
+            keccak256("investment-ai-review"),
+            "ipfs://ai-investment-review"
+        );
+
+        vm.expectRevert("Bits: review summary required");
+        bits.storeInvestmentReview(
+            houseId,
+            "moderate",
+            7_800,
+            "",
+            keccak256("investment-ai-review"),
+            "ipfs://ai-investment-review"
+        );
+
+        vm.expectRevert("Bits: invalid confidence");
+        bits.storeInvestmentReview(
+            houseId,
+            "moderate",
+            10_001,
+            "Review summary.",
+            keccak256("investment-ai-review"),
+            "ipfs://ai-investment-review"
+        );
+
+        vm.stopPrank();
+    }
+
     function test_StudentPaysRentAndGetsReceiptDates() public {
         uint256 houseId = _uploadHouse();
         vm.warp(1_700_000_000);
