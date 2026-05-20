@@ -92,8 +92,6 @@ Landlord = 196.8 MNT
 
 
 
-## AI x RWA Positioning
-
 Bits brings student housing cashflows on-chain as a real-world asset.
 
 AI can be used for:
