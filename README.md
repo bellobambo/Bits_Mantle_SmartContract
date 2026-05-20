@@ -2,11 +2,8 @@
 
 Bits is an AI x RWA student housing contract deployed on Mantle. It lets landlords tokenize hostel cashflows, investors fund fractions of real properties, and students pay rent with on-chain receipts.
 
-One-line pitch:
 
-> Upload your house, invest in fractions, rent as a student - AI handles the intelligence, Mantle handles the trust.
-
-## What It Does
+## What Bits Does
 
 - Landlords register and upload hostel/property listings.
 - Investors invest in properties using Mantle-native token payments.
